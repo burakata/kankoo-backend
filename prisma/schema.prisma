@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model Users {
+  Id        Int      @id @default(autoincrement())
+  Name      String   @db.VarChar(45)
+  UserName      String   @db.VarChar(45) @unique
+  Password      String   @db.VarChar(45)
+  IsAdmin  Boolean @default(false)
+}
+
+
+model Teams {
+  Id        Int      @id @default(autoincrement())
+  Name      String   @db.VarChar(45)
+HomeGames   Fixture[] @relation("HomeTeam")
+AwayGames   Fixture[] @relation("AwayTeam")
+
+    @@index([Id])
+}
+
+model Fixture {
+  GameId        Int      @id @default(autoincrement())
+  GameBets   Bets[] @relation("GameBets")  
+
+  Week        Weeks   @relation(fields: [WeekId], references: [Id])
+  WeekId        Int   
+  HomeTeam        Teams   @relation("HomeTeam", fields: [HomeTeamId], references: [Id])
+  HomeTeamId      Int  
+  AwayTeam        Teams   @relation("AwayTeam", fields: [AwayTeamId], references: [Id])
+  AwayTeamId      Int  
+
+  HomeWinPoint Int
+	DrawPoint   Int
+	AwayWinPoint Int
+  Result        Int  @default(-1)
+
+  @@index([GameId])
+  @@index([WeekId])
+  @@unique([GameId])
+
+}
+
+// model GamePoints {
+//   GameId        Int     @id 
+// 	HomeWinPoint Int
+// 	DrawPoint   Int
+// 	AwayWinPoint Int
+
+//   Game        Fixture[]   @relation("GamePoints")     
+
+//   @@index([GameId])
+//   @@unique([GameId])
+// }
+
+model Bets {
+  UserId        Int
+  Game        Fixture   @relation("GameBets", fields: [GameId], references: [GameId])     
+	GameId       Int
+	Bet   Int
+
+  @@index([UserId, GameId])
+  @@unique([UserId, GameId])
+}
+
+model Weeks {
+  Id        Int     @id
+	IsBetActive       Boolean
+  Games   Fixture[]
+  @@index([Id])
+}
+
+model ResultTypes {
+    Id        Int     @id
+	  Description      String   @db.VarChar(45)
+
+    @@index([Id])
+}
