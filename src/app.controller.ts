@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common'
 import { PrismaService } from './prisma.service'
 import { Users as UserModel, Teams as TeamModel,  Prisma, Weeks, Fixture, Bets } from '@prisma/client'
-import { exception } from 'console';
+//import { exception } from 'console';
 
 @Controller()
 export class AppController {
@@ -54,6 +54,15 @@ export class AppController {
   @Get('users')
   async getAllUsers(): Promise<UserModel[]> {
     return this.prismaService.users.findMany()
+  }
+
+
+  @Get('users/:userName')
+  async getUserByUsername(@Param('userName') userName: string): Promise<UserModel> {
+    return this.prismaService.users.findFirst(
+      { 
+        where: { UserName: userName }
+      })
   }
 
   @Get('teams')
@@ -199,9 +208,37 @@ export class AppController {
   ): Promise<any>  {
 
     console.log(betData);
-   
+
+    const existingBet = await this.prismaService.bets.findFirst(
+      { 
+        where: {AND : [{ UserId: betData.userId}, {GameId: betData.gameId }]}
+      }
+    );
+
+    if(!existingBet)
+    {
+      try {
+        return await this.prismaService.bets.create({
+          data: {
+            UserId: betData.userId,
+            GameId: betData.gameId,
+            Bet: betData.bet
+          },
+        })
+      }
+      catch (e){
+        //return {error : e.message}
+
+      throw new HttpException({
+          message: e.message
+        }, HttpStatus.BAD_REQUEST); 
+      }
+  }
+  else 
+  {
     try {
-      return await this.prismaService.bets.create({
+      return await this.prismaService.bets.update({
+        where: {UserId_GameId: {UserId: betData.userId, GameId: betData.gameId} },
         data: {
           UserId: betData.userId,
           GameId: betData.gameId,
@@ -216,6 +253,7 @@ export class AppController {
         message: e.message
       }, HttpStatus.BAD_REQUEST); 
     }
+  }
   } 
 /* 
   @Put('publish/:id')
